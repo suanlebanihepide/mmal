@@ -66,7 +66,7 @@ public class UserServiceImpl implements IUserService {
 
     public ServerResponse<String> checkVaild(String str,String type){
 
-        if(StringUtils.isNoneBlank()){
+        if(StringUtils.isNoneBlank(str)){
 
             if(Const.username.equals(type)){
                 int count = userMapper.checkUsername(str);
@@ -140,6 +140,53 @@ public class UserServiceImpl implements IUserService {
         }
 
         return ServerResponse.createByErrorMessage("修改密码失败");
+    }
+
+    public  ServerResponse<String> resetPassword(String password,String passwordNew , User user){
+
+        int count = userMapper.checkPassword(MD5Util.MD5EncodeUtf8(password),user.getId());
+        if(count==0){
+            return ServerResponse.createByErrorMessage("密码错误");
+        }
+        user.setPassword(MD5Util.MD5EncodeUtf8(passwordNew));
+
+        int updateCount = userMapper.updateByPrimaryKeySelective(user);
+        if(updateCount>0){
+            return  ServerResponse.createBySuccessMessage("succes");
+        }
+        return ServerResponse.createByErrorMessage("密码更新失败");
+    }
+
+    public ServerResponse<User> update_information(User user){
+
+        //username不能被更新
+        //email是否已存在
+        int resultCount = userMapper.checkEmailByUserId(user.getEmail(),user.getId()) ;
+
+        if(resultCount>0){
+            return ServerResponse.createByErrorMessage("邮箱已经存在");
+        }
+        User updateUser = new User();
+        updateUser.setId(user.getId());
+        updateUser.setEmail(user.getEmail());
+        updateUser.setPhone(user.getPhone());
+        updateUser.setQuestion(user.getQuestion());
+        updateUser.setAnswer(user.getAnswer());
+
+        int updateCount = userMapper.updateByPrimaryKeySelective(updateUser);
+        if(updateCount>0){
+            return ServerResponse.createBySuccess("更新成功",updateUser);
+        }
+        return ServerResponse.createByErrorMessage("更新失败");
+
+    }
+
+    //backend
+    public ServerResponse checkAdminRole(User user){
+    if(user!=null &&user.getRole().intValue()==Const.Role.ROLE_ADMIN)
+        return ServerResponse.createBySuccess();
+        return ServerResponse.createByError();
+
     }
 
 }
